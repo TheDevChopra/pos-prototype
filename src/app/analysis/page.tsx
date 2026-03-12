@@ -78,7 +78,7 @@ export default function AnalysisPage() {
               <ArrowLeft className="w-5 h-5 text-slate-500 group-hover:text-slate-900" />
             </button>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">Deep Analysis</h1>
+              <h1 className="text-xl font-bold tracking-tight">POSLY Analysis</h1>
               <p className="text-xs font-medium text-slate-500">Intelligent Business Insights</p>
             </div>
           </div>

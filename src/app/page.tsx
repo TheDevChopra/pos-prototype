@@ -60,7 +60,7 @@ export default function Home() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
             </span>
-            Next-Gen Point of Sale
+            POSLY - Next-Gen POS
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.1] animate-in fade-in slide-in-from-bottom-4 duration-700">
             Control your <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">business ecosystem</span> from one place.

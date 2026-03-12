@@ -7,7 +7,7 @@ import clsx from 'clsx';
 
 const steps = [
     {
-        title: 'Welcome to Shake Era POS! 👋',
+        title: 'Welcome to POSLY! 👋',
         description: 'Let us show you how simple it is to run your business with this demo. Takes only 30 seconds.',
     },
     {

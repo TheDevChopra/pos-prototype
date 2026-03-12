@@ -196,9 +196,9 @@ export default function AdminDashboard() {
             <aside className="w-64 bg-white border-r shadow-sm flex flex-col z-10">
                 <div className="p-6 border-b">
                     <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-800">
-                        Owner Panel
+                        POSLY Admin
                     </h1>
-                    <p className="text-slate-500 text-sm mt-1">Shake Era Central</p>
+                    <p className="text-slate-500 text-sm mt-1">POSLY Central Ecosystem</p>
                 </div>
 
                 <nav className="flex-1 p-4 space-y-2">

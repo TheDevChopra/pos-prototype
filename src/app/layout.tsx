@@ -6,8 +6,8 @@ import { ClientGuard } from '@/components/ClientGuard';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Shake Era POS Demo',
-  description: 'A modern, interactive POS prototype built for cafes and small restaurants.',
+  title: 'POSLY - Next-Gen POS Solution',
+  description: 'A modern, interactive POS ecosystem for high-performance businesses.',
 };
 
 export default function RootLayout({

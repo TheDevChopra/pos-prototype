@@ -15,7 +15,7 @@ export function ClientGuard({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (!mounted) return;
-        if (pathname === '/' || pathname === '/login') {
+        if (pathname === '/login') {
             router.push('/pos');
         }
     }, [mounted, pathname, router]);
@@ -28,7 +28,7 @@ export function ClientGuard({ children }: { children: React.ReactNode }) {
         );
     }
 
-    if (pathname === '/' || pathname === '/login') return null;
+    if (pathname === '/login') return null;
 
     return <>{children}</>;
 }

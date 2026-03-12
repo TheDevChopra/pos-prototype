@@ -94,7 +94,7 @@ export default function PosPage() {
             {/* Left Panel: Categories */}
             <aside className="w-64 bg-white border-r flex flex-col shadow-sm z-10">
                 <div className="p-4 border-b bg-blue-600 text-white shadow-sm flex items-center justify-between">
-                    <h1 className="text-xl font-bold tracking-tight">Shake Era POS</h1>
+                    <h1 className="text-xl font-bold tracking-tight">POSLY</h1>
                     <button
                         onClick={handleVoiceOrderStart}
                         className="p-2 bg-blue-500 hover:bg-blue-400 rounded-full transition-colors text-white tooltip-trigger"
