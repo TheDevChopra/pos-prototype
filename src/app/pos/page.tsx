@@ -8,6 +8,7 @@ import { Modal } from '@/components/Modal';
 import { Minus, Plus, ShoppingCart, LogOut, ArrowRight, Printer, Settings, Mic, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
+import { parseVoiceTranscript, ParsedOrderItem } from '@/lib/voiceUtils';
 
 export default function PosPage() {
     const router = useRouter();
@@ -22,11 +23,15 @@ export default function PosPage() {
     const [selectedCategory, setSelectedCategory] = useState<string>('Fries');
     const [showReceipt, setShowReceipt] = useState(false);
 
-    // Modals
+    // Modals & Voice
     const [isVoiceModalOpen, setVoiceModalOpen] = useState(false);
     const [voiceTranscript, setVoiceTranscript] = useState('');
     const [isListening, setIsListening] = useState(false);
     const [isClearCartModalOpen, setClearCartModalOpen] = useState(false);
+    const [unrecognizedItems, setUnrecognizedItems] = useState<string[]>([]);
+    const [parsedPreview, setParsedPreview] = useState<ParsedOrderItem[]>([]);
+    const [recognition, setRecognition] = useState<any>(null);
+    const [voiceError, setVoiceError] = useState<string>('');
 
     // Derived State
     const categories = useMemo(() => Array.from(new Set(menuItems.map(i => i.category))), [menuItems]);
@@ -64,27 +69,78 @@ export default function PosPage() {
     };
 
     const handleVoiceOrderStart = () => {
-        setVoiceModalOpen(true);
-        setIsListening(true);
-        setVoiceTranscript('Listening...');
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            setVoiceError('Voice ordering not supported on this browser.');
+            setVoiceModalOpen(true);
+            return;
+        }
 
-        // Simulate voice recognition demo
-        setTimeout(() => {
-            setVoiceTranscript('two chocolate shakes and one fries');
+        const rec = new SpeechRecognition();
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.lang = 'en-IN'; // Default to Indian English
+
+        rec.onstart = () => {
+            setIsListening(true);
+            setVoiceTranscript('Listening...');
+            setVoiceError('');
+            setUnrecognizedItems([]);
+            setParsedPreview([]);
+        };
+
+        rec.onresult = (event: any) => {
+            let current = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                current += event.results[i][0].transcript;
+            }
+            setVoiceTranscript(current);
+            
+            // Real-time preview parsing (optional but nice)
+            const { items } = parseVoiceTranscript(current, menuItems);
+            setParsedPreview(items);
+        };
+
+        rec.onerror = (event: any) => {
+            console.error('Speech recognition error', event.error);
+            setVoiceError(`Error: ${event.error}`);
             setIsListening(false);
-        }, 3000);
+        };
+
+        rec.onend = () => {
+            setIsListening(false);
+        };
+
+        setRecognition(rec);
+        rec.start();
+        setVoiceModalOpen(true);
     };
 
     const confirmVoiceOrder = () => {
-        if (voiceTranscript.includes('chocolate shakes')) {
-            const shake = menuItems.find(i => i.id === '16');
-            if (shake) { addToCart(shake); addToCart(shake); }
+        if (recognition) recognition.stop();
+        
+        const { items, unrecognized } = parseVoiceTranscript(voiceTranscript, menuItems);
+        
+        if (items.length > 0) {
+            items.forEach(pi => {
+                for (let i = 0; i < pi.quantity; i++) {
+                    addToCart(pi.item);
+                }
+            });
+            setVoiceModalOpen(false);
+        } else if (unrecognized.length > 0) {
+            setUnrecognizedItems(unrecognized);
+        } else {
+            setVoiceError('Could not understand the order. Please try again.');
         }
-        if (voiceTranscript.includes('fries')) {
-            const fries = menuItems.find(i => i.id === '1');
-            if (fries) addToCart(fries);
+    };
+
+    const stopListening = () => {
+        if (recognition) {
+            recognition.stop();
+            setIsListening(false);
         }
-        setVoiceModalOpen(false);
     };
 
     return (
@@ -284,18 +340,65 @@ export default function PosPage() {
                 />
             )}
 
-            <Modal isOpen={isVoiceModalOpen} onClose={() => setVoiceModalOpen(false)} title="AI Voice Ordering">
+            <Modal isOpen={isVoiceModalOpen} onClose={() => { stopListening(); setVoiceModalOpen(false); }} title="Multi-language Voice Ordering">
                 <div className="flex flex-col items-center justify-center space-y-6 py-6 border-b border-t border-slate-100 bg-slate-50/50 rounded-xl my-4">
-                    <div className={clsx("w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-all duration-500", isListening ? "bg-red-500 animate-pulse text-white scale-110" : "bg-blue-600 text-white")}>
+                    <div className={clsx(
+                        "w-24 h-24 rounded-full flex items-center justify-center shadow-lg transition-all duration-500", 
+                        isListening ? "bg-red-500 animate-pulse text-white scale-110 shadow-red-200" : "bg-blue-600 text-white"
+                    )}>
                         <Mic className="w-10 h-10" />
                     </div>
-                    <p className="text-lg font-medium text-slate-700 italic px-8 text-center min-h-[3rem]">
-                        &quot;{voiceTranscript}&quot;
-                    </p>
+                    
+                    <div className="text-center px-8 w-full max-h-40 overflow-y-auto">
+                        <p className="text-lg font-medium text-slate-700 italic">
+                            &quot;{voiceTranscript || 'Speak now...'}&quot;
+                        </p>
+                        
+                        {voiceError && (
+                            <p className="text-red-500 text-sm mt-4 font-bold bg-red-50 p-2 rounded-lg">{voiceError}</p>
+                        )}
+
+                        {parsedPreview.length > 0 && !voiceError && (
+                            <div className="mt-4 space-y-1">
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Detected Items</p>
+                                <div className="flex flex-wrap justify-center gap-2">
+                                    {parsedPreview.map((pi, idx) => (
+                                        <span key={idx} className="bg-emerald-100 text-emerald-700 text-xs px-2 py-1 rounded-full font-bold">
+                                            {pi.item.name} ×{pi.quantity}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {unrecognizedItems.length > 0 && (
+                            <div className="mt-4">
+                                <p className="text-red-500 text-xs font-bold bg-red-50 p-2 rounded-lg">
+                                    Items not found in menu: {unrecognizedItems.join(', ')}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {!voiceError && (
+                        <div className="flex gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                            <span>English</span> • <span>Hindi</span> • <span>Hinglish</span>
+                        </div>
+                    )}
                 </div>
                 <div className="flex justify-end gap-3 mt-6">
-                    <button onClick={() => setVoiceModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-medium">Cancel</button>
-                    <button onClick={confirmVoiceOrder} disabled={isListening} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium disabled:opacity-50">Add to Order</button>
+                    <button onClick={() => { stopListening(); setVoiceModalOpen(false); }} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-medium">Cancel</button>
+                    {isListening ? (
+                        <button onClick={stopListening} className="px-5 py-2 bg-slate-200 text-slate-700 rounded-xl font-medium">Stop Listening</button>
+                    ) : (
+                        <button 
+                            onClick={confirmVoiceOrder} 
+                            disabled={!voiceTranscript || voiceTranscript === 'Listening...' || !!voiceError} 
+                            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium disabled:opacity-50 shadow-lg shadow-blue-100 transition-all hover:scale-105 active:scale-95"
+                        >
+                            Add to Order
+                        </button>
+                    )}
                 </div>
             </Modal>
 
